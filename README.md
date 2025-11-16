@@ -1,4 +1,4 @@
-\# Energy Consumption Forecasting
+# Energy Consumption Forecasting
 
 
 
@@ -6,38 +6,32 @@ Forecast household energy consumption using historical data and time-series mode
 
 
 
-\## Overview
+## Overview
 
 This project analyzes electricity usage data from an individual household to build a predictive model for daily energy consumption. The workflow demonstrates a complete time-series forecasting pipeline.
 
 Note: The dataset is not included in this repository due to size limits.
 You can download it here: <https://archive.ics.uci.edu/dataset/235/individual+household+electric+power+consumption>
-Key steps include:
 
 
 Key steps include:
 
 
+- Data loading and cleaning  
 
-\- Data loading and cleaning  
+- Handling missing values and converting data types  
 
-\- Handling missing values and converting data types  
+- Exploratory data analysis (EDA) and visualization of trends  
 
-\- Exploratory data analysis (EDA) and visualization of trends  
+- Resampling and aggregation to daily consumption  
 
-\- Resampling and aggregation to daily consumption  
+- Time-series decomposition (trend, seasonality, residuals)  
 
-\- Time-series decomposition (trend, seasonality, residuals)  
+- SARIMA forecasting for daily energy consumption  
 
-\- SARIMA forecasting for daily energy consumption  
+- Model evaluation using MAE, RMSE, and MAPE  
 
-\- Model evaluation using MAE, RMSE, and MAPE  
-
-\- Visualizing actual vs. predicted consumption
-
-
-
-
+- Visualizing actual vs. predicted consumption
 
 
 
@@ -45,11 +39,11 @@ Key steps include:
 
 
 
-\## Key Steps Performed
+## Key Steps Performed
 
 
 
-&nbsp;\*\*Data Preprocessing\*\*
+&nbsp;**Data Preprocessing**
 
 &nbsp;  - Converted Date and Time columns to datetime index  
 
@@ -57,7 +51,7 @@ Key steps include:
 
 
 
-\*\*Exploratory Data Analysis\*\*
+**Exploratory Data Analysis**
 
 &nbsp;  - Visualized global active power trends  
 
@@ -65,13 +59,13 @@ Key steps include:
 
 
 
-\*\*Modeling\*\*
+**Modeling**
 
 &nbsp;  - Applied SARIMA model for forecasting daily consumption  
 
 
 
-\*\*Evaluation\*\*
+**Evaluation**
 
 &nbsp;  - Computed MAE, RMSE, and MAPE  
 
@@ -83,27 +77,13 @@ Key steps include:
 
 
 
-\## Results Summary
+## Results Summary
 
-\- The SARIMA model captured trends and seasonal patterns in daily energy usage  
+- The SARIMA model captured trends and seasonal patterns in daily energy usage  
 
-\- Forecast accuracy was reasonable as indicated by MAE, RMSE, and MAPE metrics  
+- Forecast accuracy was reasonable as indicated by MAE, RMSE, and MAPE metrics  
 
-\- Time-series decomposition highlighted weekday/weekend differences and seasonal effects
-
-
-
----
-
-
-
-\## Future Work
-
-\- Hyperparameter tuning for SARIMA or trying Prophet/LSTM models  
-
-\- Forecasting at higher granularity (hourly)  
-
-\- Incorporating external variables like temperature or holidays to improve predictions
+- Time-series decomposition highlighted weekday/weekend differences and seasonal effects
 
 
 
@@ -111,5 +91,16 @@ Key steps include:
 
 
 
+## Future Work
+
+- Hyperparameter tuning for SARIMA or trying Prophet/LSTM models
+  
+- Forecasting at higher granularity (hourly)  
+
+- Incorporating external variables like temperature or holidays to improve predictions
+
+
+
+---
 
 
