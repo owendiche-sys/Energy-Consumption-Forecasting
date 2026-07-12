@@ -39,8 +39,6 @@ html, body, [data-testid="stAppViewContainer"] {{
     color: {TEXT};
 }}
 
-[data-testid="stAppViewContainer"],
-[data-testid="stAppViewContainer"] *,
 .block-container,
 .block-container *,
 section[data-testid="stSidebar"],
@@ -48,17 +46,40 @@ section[data-testid="stSidebar"] * {{
     color: {TEXT};
 }}
 
-[data-testid="stAppViewContainer"] p,
-[data-testid="stAppViewContainer"] li,
-[data-testid="stAppViewContainer"] span,
-[data-testid="stAppViewContainer"] label,
-[data-testid="stAppViewContainer"] div,
-[data-testid="stAppViewContainer"] h1,
-[data-testid="stAppViewContainer"] h2,
-[data-testid="stAppViewContainer"] h3,
-[data-testid="stAppViewContainer"] h4,
-[data-testid="stAppViewContainer"] h5,
-[data-testid="stAppViewContainer"] h6 {{
+[data-testid="stHeader"],
+[data-testid="stHeader"] *,
+[data-testid="stToolbar"],
+[data-testid="stToolbar"] *,
+[data-testid="stStatusWidget"],
+[data-testid="stStatusWidget"] *,
+[data-testid="stDecoration"],
+[data-testid="stDecoration"] *,
+header,
+header *,
+header button,
+header button *,
+header a,
+header a * {{
+    color: #F8FAFC !important;
+    fill: #F8FAFC !important;
+    stroke: #F8FAFC !important;
+}}
+
+[data-testid="stHeader"] {{
+    background: #0B0F17;
+}}
+
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li,
+[data-testid="stMarkdownContainer"] span,
+[data-testid="stMarkdownContainer"] label,
+[data-testid="stMarkdownContainer"] div,
+[data-testid="stMarkdownContainer"] h1,
+[data-testid="stMarkdownContainer"] h2,
+[data-testid="stMarkdownContainer"] h3,
+[data-testid="stMarkdownContainer"] h4,
+[data-testid="stMarkdownContainer"] h5,
+[data-testid="stMarkdownContainer"] h6 {{
     color: {TEXT};
 }}
 
@@ -100,9 +121,7 @@ section[data-testid="stSidebar"] > div {{
 div[data-baseweb="select"] *,
 div[data-baseweb="input"] *,
 div[data-baseweb="slider"] *,
-div[data-baseweb="tab-list"] *,
-button[kind],
-button[kind] * {{
+div[data-baseweb="tab-list"] * {{
     color: {TEXT};
 }}
 
@@ -110,9 +129,49 @@ div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div,
 textarea,
 input {{
-    background: {CARD};
-    color: {TEXT};
-    border-color: {BORDER};
+    background: {CARD} !important;
+    color: {TEXT} !important;
+    border-color: {BORDER} !important;
+}}
+
+[data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input,
+[data-testid="stDateInput"] input,
+[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
+[data-testid="stMultiSelect"] div[data-baseweb="select"] > div {{
+    background: {CARD} !important;
+    color: {TEXT} !important;
+    -webkit-text-fill-color: {TEXT} !important;
+}}
+
+[data-testid="stTextInput"] input::placeholder,
+[data-testid="stNumberInput"] input::placeholder {{
+    color: rgba(17,24,39,0.45) !important;
+    -webkit-text-fill-color: rgba(17,24,39,0.45) !important;
+}}
+
+button[kind="primary"],
+button[kind="primary"] * {{
+    background: {ACCENT} !important;
+    color: #FFFFFF !important;
+}}
+
+button[kind="secondary"],
+button[kind="secondary"] * {{
+    color: {TEXT} !important;
+}}
+
+[data-testid="stHeader"] button,
+[data-testid="stHeader"] button *,
+[data-testid="stToolbar"] button,
+[data-testid="stToolbar"] button *,
+[data-testid="stStatusWidget"] button,
+[data-testid="stStatusWidget"] button *,
+header button,
+header button * {{
+    color: #F8FAFC !important;
+    fill: #F8FAFC !important;
+    stroke: #F8FAFC !important;
 }}
 
 div[data-baseweb="tab"] {{
