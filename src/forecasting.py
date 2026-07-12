@@ -140,7 +140,7 @@ def load_aggregates_from_uci(
                 for idx, val in day_sum.items():
                     daily_sum_acc[idx] = daily_sum_acc.get(idx, 0.0) + float(val)
 
-                hour = dt.dt.floor("H")
+                hour = dt.dt.floor("h")
                 hour_sum = values.groupby(hour).sum()
                 hour_count = values.groupby(hour).count()
                 for idx, val in hour_sum.items():

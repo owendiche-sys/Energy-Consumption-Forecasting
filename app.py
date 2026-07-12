@@ -341,7 +341,7 @@ def build_profiles(daily_sum: pd.Series, hourly_mean: pd.Series):
         .reindex(weekday_order)
     )
 
-    monthly_sum = daily_sum.resample("M").sum()
+    monthly_sum = daily_sum.resample("ME").sum()
 
     top_days = daily_sum.sort_values(ascending=False).head(10).reset_index()
     top_days.columns = ["Date", "Total"]
