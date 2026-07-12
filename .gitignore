@@ -1,6 +1,15 @@
+.cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.streamlit/secrets.toml
+
+# Raw downloaded data
 data.txt
 data.zip
-.cache/
-data.txt
-data.zip
-.cache/
+*.zip
+*.txt
+
+# Local environments
+.venv/
+venv/

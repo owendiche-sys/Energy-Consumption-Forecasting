@@ -1,15 +1,17 @@
-import pickle
-import zipfile
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import requests
 import streamlit as st
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-from statsmodels.tsa.statespace.sarimax import SARIMAX
+
+from src.forecasting import (
+    DEFAULT_DATA_URL,
+    TARGET_OPTIONS as FORECAST_TARGET_OPTIONS,
+    benchmark_forecasts,
+    evaluate_forecast,
+    fit_sarima_model,
+    load_aggregates_from_uci,
+)
 
 
 # =========================================================
@@ -34,6 +36,30 @@ def apply_styles():
 <style>
 html, body, [data-testid="stAppViewContainer"] {{
     background: {BG};
+    color: {TEXT};
+}}
+
+[data-testid="stAppViewContainer"],
+[data-testid="stAppViewContainer"] *,
+.block-container,
+.block-container *,
+section[data-testid="stSidebar"],
+section[data-testid="stSidebar"] * {{
+    color: {TEXT};
+}}
+
+[data-testid="stAppViewContainer"] p,
+[data-testid="stAppViewContainer"] li,
+[data-testid="stAppViewContainer"] span,
+[data-testid="stAppViewContainer"] label,
+[data-testid="stAppViewContainer"] div,
+[data-testid="stAppViewContainer"] h1,
+[data-testid="stAppViewContainer"] h2,
+[data-testid="stAppViewContainer"] h3,
+[data-testid="stAppViewContainer"] h4,
+[data-testid="stAppViewContainer"] h5,
+[data-testid="stAppViewContainer"] h6 {{
+    color: {TEXT};
 }}
 
 .block-container {{
@@ -51,11 +77,62 @@ footer {{
 }}
 
 section[data-testid="stSidebar"] > div {{
+    background: {BG};
     border-right: 1px solid {BORDER};
+}}
+
+[data-testid="stMarkdownContainer"],
+[data-testid="stMarkdownContainer"] *,
+[data-testid="stCaptionContainer"],
+[data-testid="stCaptionContainer"] *,
+[data-testid="stExpander"],
+[data-testid="stExpander"] *,
+[data-testid="stAlert"],
+[data-testid="stAlert"] * {{
+    color: {TEXT};
+}}
+
+[data-testid="stCaptionContainer"],
+[data-testid="stCaptionContainer"] * {{
+    color: {MUTED};
+}}
+
+div[data-baseweb="select"] *,
+div[data-baseweb="input"] *,
+div[data-baseweb="slider"] *,
+div[data-baseweb="tab-list"] *,
+button[kind],
+button[kind] * {{
+    color: {TEXT};
+}}
+
+div[data-baseweb="select"] > div,
+div[data-baseweb="input"] > div,
+textarea,
+input {{
+    background: {CARD};
+    color: {TEXT};
+    border-color: {BORDER};
+}}
+
+div[data-baseweb="tab"] {{
+    color: {MUTED};
+}}
+
+div[data-baseweb="tab"][aria-selected="true"] {{
+    color: {TEXT};
+}}
+
+[data-testid="stDataFrame"],
+[data-testid="stDataFrame"] *,
+[data-testid="stTable"],
+[data-testid="stTable"] * {{
+    color: {TEXT};
 }}
 
 .card {{
     background: {CARD};
+    color: {TEXT};
     border: 1px solid {BORDER};
     border-radius: 20px;
     padding: 18px 18px;
@@ -64,6 +141,7 @@ section[data-testid="stSidebar"] > div {{
 
 .kpi-card {{
     background: {CARD};
+    color: {TEXT};
     border: 1px solid {BORDER};
     border-radius: 20px;
     padding: 16px 18px;
@@ -93,6 +171,7 @@ section[data-testid="stSidebar"] > div {{
 
 .hero {{
     background: linear-gradient(135deg, rgba(37,99,235,0.08), rgba(255,255,255,0.94));
+    color: {TEXT};
     border: 1px solid {BORDER};
     border-radius: 24px;
     padding: 24px 24px 18px 24px;
@@ -143,6 +222,7 @@ section[data-testid="stSidebar"] > div {{
 
 .insight-box {{
     background: rgba(37,99,235,0.04);
+    color: {TEXT};
     border: 1px solid rgba(37,99,235,0.10);
     border-radius: 16px;
     padding: 14px 16px;
@@ -217,148 +297,21 @@ def badge_row(items: list[str]) -> None:
 # =========================================================
 # DATA CONFIG
 # =========================================================
-DEFAULT_URL = (
-    "https://cdn.uci-ics-mlr-prod.aws.uci.edu/235/"
-    "individual%2Bhousehold%2Belectric%2Bpower%2Bconsumption.zip"
-)
-
-TARGET_OPTIONS = [
-    "Global_active_power",
-    "Global_reactive_power",
-    "Voltage",
-    "Global_intensity",
-    "Sub_metering_1",
-    "Sub_metering_2",
-    "Sub_metering_3",
-]
-
-
-# =========================================================
-# DATA LOADING + CACHING
-# =========================================================
-def ensure_zip_cached(url: str) -> Path:
-    cache_dir = Path(".cache")
-    cache_dir.mkdir(exist_ok=True)
-    zip_path = cache_dir / "uci_household_power.zip"
-
-    if not zip_path.exists():
-        response = requests.get(url, stream=True, timeout=180)
-        response.raise_for_status()
-        with open(zip_path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=1024 * 1024):
-                if chunk:
-                    file.write(chunk)
-
-    return zip_path
+DEFAULT_URL = DEFAULT_DATA_URL
+TARGET_OPTIONS = FORECAST_TARGET_OPTIONS
 
 
 @st.cache_data(show_spinner=False)
 def load_aggregates(url: str, target_col: str):
-    """
-    Returns:
-        daily_sum_full: daily totals
-        hourly_mean_full: hourly means
-        min_dt, max_dt
-    """
-    cache_dir = Path(".cache")
-    cache_dir.mkdir(exist_ok=True)
-
-    daily_path = cache_dir / f"daily_sum__{target_col}.pkl"
-    hourly_path = cache_dir / f"hourly_mean__{target_col}.pkl"
-
-    if daily_path.exists() and hourly_path.exists():
-        with open(daily_path, "rb") as file:
-            daily_sum_full = pickle.load(file)
-        with open(hourly_path, "rb") as file:
-            hourly_mean_full = pickle.load(file)
-
-        daily_sum_full = daily_sum_full.sort_index()
-        hourly_mean_full = hourly_mean_full.sort_index()
-        return (
-            daily_sum_full,
-            hourly_mean_full,
-            daily_sum_full.index.min(),
-            daily_sum_full.index.max(),
-        )
-
-    zip_path = ensure_zip_cached(url)
-
-    daily_sum_acc = {}
-    hourly_sum_acc = {}
-    hourly_cnt_acc = {}
-
-    with zipfile.ZipFile(zip_path, "r") as zf:
-        txt_name = next((name for name in zf.namelist() if name.lower().endswith(".txt")), None)
-        if txt_name is None:
-            raise ValueError("ZIP archive did not contain a .txt file.")
-
-        with zf.open(txt_name) as file:
-            reader = pd.read_csv(
-                file,
-                sep=";",
-                usecols=["Date", "Time", target_col],
-                na_values="?",
-                low_memory=False,
-                chunksize=200_000,
-            )
-
-            for chunk in reader:
-                dt = pd.to_datetime(
-                    chunk["Date"] + " " + chunk["Time"],
-                    dayfirst=True,
-                    errors="coerce",
-                )
-                values = pd.to_numeric(chunk[target_col], errors="coerce")
-
-                mask = dt.notna() & values.notna()
-                if not mask.any():
-                    continue
-
-                dt = dt[mask]
-                values = values[mask]
-
-                day = dt.dt.floor("D")
-                day_sum = values.groupby(day).sum()
-                for idx, val in day_sum.items():
-                    daily_sum_acc[idx] = daily_sum_acc.get(idx, 0.0) + float(val)
-
-                hour = dt.dt.floor("H")
-                hour_sum = values.groupby(hour).sum()
-                hour_cnt = values.groupby(hour).count()
-
-                for idx, val in hour_sum.items():
-                    hourly_sum_acc[idx] = hourly_sum_acc.get(idx, 0.0) + float(val)
-                for idx, cnt in hour_cnt.items():
-                    hourly_cnt_acc[idx] = hourly_cnt_acc.get(idx, 0) + int(cnt)
-
-    daily_sum_full = pd.Series(daily_sum_acc).sort_index()
-    hourly_sum_full = pd.Series(hourly_sum_acc).sort_index()
-    hourly_cnt_full = pd.Series(hourly_cnt_acc).sort_index()
-    hourly_mean_full = (hourly_sum_full / hourly_cnt_full).dropna()
-
-    with open(daily_path, "wb") as file:
-        pickle.dump(daily_sum_full, file)
-
-    with open(hourly_path, "wb") as file:
-        pickle.dump(hourly_mean_full, file)
-
-    return (
-        daily_sum_full,
-        hourly_mean_full,
-        daily_sum_full.index.min(),
-        daily_sum_full.index.max(),
-    )
+    return load_aggregates_from_uci(url, target_col)
 
 
 # =========================================================
 # ANALYTICS HELPERS
 # =========================================================
 def eval_forecast(y_true: pd.Series, y_pred: pd.Series):
-    mae = mean_absolute_error(y_true, y_pred)
-    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
-    denom = y_true.replace(0, np.nan)
-    mape = np.nanmean(np.abs((y_true - y_pred) / denom)) * 100
-    return mae, rmse, mape
+    metrics = evaluate_forecast(y_true, y_pred)
+    return metrics["MAE"], metrics["RMSE"], metrics["MAPE"]
 
 
 @st.cache_resource(show_spinner=False)
@@ -367,14 +320,7 @@ def fit_sarima_cached(
     order=(1, 1, 1),
     seasonal_order=(1, 1, 1, 7),
 ):
-    model = SARIMAX(
-        train,
-        order=order,
-        seasonal_order=seasonal_order,
-        enforce_stationarity=False,
-        enforce_invertibility=False,
-    )
-    return model.fit(disp=False)
+    return fit_sarima_model(train, order=order, seasonal_order=seasonal_order)
 
 
 def build_profiles(daily_sum: pd.Series, hourly_mean: pd.Series):
@@ -863,8 +809,8 @@ These insights are descriptive and pattern-based. They are most useful for highl
 else:
     section_header(
         "Prediction",
-        "SARIMA forecast",
-        "Forecast future daily totals and assess holdout performance using SARIMA (1,1,1) × (1,1,1,7).",
+        "Forecast model comparison",
+        "Compare simple baselines with SARIMA (1,1,1) x (1,1,1,7), then generate future daily forecasts.",
     )
 
     series_forecast = daily_sum.asfreq("D").ffill().bfill()
@@ -920,6 +866,7 @@ else:
     ci.index = test.index
 
     mae, rmse, mape = eval_forecast(test, pred)
+    benchmark_df = benchmark_forecasts(train, test, pred)
 
     m1, m2, m3, m4 = st.columns(4, gap="large")
     with m1:
@@ -930,6 +877,28 @@ else:
         kpi_card("MAPE", safe_pct(mape, 2), "Average percentage error")
     with m4:
         kpi_card("Forecast Horizon", f"{int(horizon)} days", "Future projection window")
+
+    st.write("")
+
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("Model benchmark")
+    st.caption(
+        "SARIMA is evaluated against simple forecasting baselines so model value is visible, not assumed."
+    )
+    display_benchmark = benchmark_df.copy()
+    for col in ["MAE", "RMSE", "MAPE"]:
+        display_benchmark[col] = display_benchmark[col].map(lambda value: f"{value:,.2f}")
+    st.dataframe(display_benchmark, use_container_width=True, hide_index=True)
+    best_model = benchmark_df.iloc[0]["Model"]
+    st.markdown(
+        f"""
+<div class="insight-box">
+Best holdout model by RMSE: <strong>{best_model}</strong>. Use this table to check whether SARIMA adds value beyond simple demand-history baselines.
+</div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
 
     st.write("")
 
